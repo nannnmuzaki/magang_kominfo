@@ -64,3 +64,56 @@ select:focus[data-flux-control] {
 /* \[:where(&)\]:size-4 {
     @apply size-4;
 } */
+
+
+
+/**
+    The lines above are intact.
+    The lines below were added by maryUI installer.
+*/
+
+/** daisyUI */
+@plugin "daisyui" {
+    themes: lofi --default, black --prefersdark;
+}
+
+/* maryUI */
+@source "../../vendor/robsontenorio/mary/src/View/Components/**/*.php";
+
+/* Theme toggle */
+@custom-variant dark (&:where(.dark, .dark *));
+
+/**
+* Paginator - Traditional style
+* Because Laravel defaults does not match well the design of daisyUI.
+*/
+
+.mary-table-pagination {
+    button, span {
+        @apply dark:text-white/90 border-zinc-200 dark:border-accent shadow-none
+    }
+ 
+    button {
+        @apply cursor-pointer bg-zinc-100 dark:bg-zinc-800
+    }
+ 
+    span[aria-current="page"] > span {
+        @apply bg-transparent 
+    }
+
+    span[aria-hidden="true"] {
+        @apply dark:bg-zinc-800
+    }
+
+    button[aria-current="page"] {
+        @apply dark:bg-zinc-800
+    }
+  
+    button, span[aria-current="page"] > span, span[aria-disabled="true"] span {
+        @apply py-1 px-2
+    }
+
+    select {
+        @apply dark:bg-zinc-800 dark:text-white/90 dark:border-neutral-700! text-xs rounded-sm
+    }
+}
