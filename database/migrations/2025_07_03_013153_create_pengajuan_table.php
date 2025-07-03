@@ -21,6 +21,8 @@ return new class extends Migration
                   ->onDelete('cascade');
             $table->string('nama');
             $table->string('nim_nis')->unique(); 
+            $table->string('no_hp')->unique();
+            $table->string('email')->unique();
             $table->string('sekolah_universitas');
             $table->string('jurusan_prodi');
 
@@ -38,7 +40,7 @@ return new class extends Migration
             $table->string('surat_pengantar_path');
             $table->string('cv_path');
 
-            $table->enum('status', ['pending', 'diterima', 'ditolak', 'selesai'])->default('pending');
+            $table->enum('status', ['review', 'diterima', 'ditolak', 'berlangsung', 'selesai'])->default('review');
 
             $table->timestamps();
         });
