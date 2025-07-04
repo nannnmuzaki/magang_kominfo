@@ -90,7 +90,7 @@ select:focus[data-flux-control] {
 
 .mary-table-pagination {
     button, span {
-        @apply dark:text-white/90 border-zinc-200 dark:border-accent shadow-none
+        @apply dark:text-white/90 border-zinc-200 dark:border-accent shadow-none 
     }
  
     button {
@@ -110,10 +110,18 @@ select:focus[data-flux-control] {
     }
   
     button, span[aria-current="page"] > span, span[aria-disabled="true"] span {
-        @apply py-1 px-2
+        @apply sm:py-1 sm:px-2
     }
 
     select {
-        @apply dark:bg-zinc-800 dark:text-white/90 dark:border-neutral-700! text-xs rounded-sm
+        @apply dark:bg-zinc-800 dark:text-white/90 dark:border-neutral-700! text-xs rounded-sm py-1
+    }
+
+    p > span {
+        @apply text-xs text-zinc-500 dark:text-zinc-400
+    }
+
+    div > span:first-child > span {
+        @apply max-sm:dark:bg-zinc-800
     }
 }
