@@ -74,7 +74,7 @@ new
 <div class="flex h-full w-full flex-col gap-4 rounded-xl">
     <x-mary-header class="mb-1!" title="Pengajuan" subtitle="Kelola pengajuan magang di Kominfo Banyumas" separator />
 
-    <flux:button icon:trailing="plus" href="#" class="mr-auto" wire:navigate>
+    <flux:button icon:trailing="plus" href="{{ route('admin.pengajuan.create') }}" class="mr-auto" wire:navigate>
         Buat Pengajuan
     </flux:button>
 

@@ -125,3 +125,7 @@ select:focus[data-flux-control] {
         @apply max-sm:dark:bg-zinc-800
     }
 }
+
+.file-input {
+    @apply bg-transparent dark:bg-transparent rounded-md
+}

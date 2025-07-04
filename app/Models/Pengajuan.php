@@ -25,6 +25,8 @@ class Pengajuan extends Model
         'user_id',
         'nama',
         'nim_nis',
+        'no_hp',
+        'email',
         'sekolah_universitas',
         'jurusan_prodi',
         'bidang_id',
