@@ -9,30 +9,26 @@
     <flux:sidebar sticky stashable class="border-e border-zinc-300 dark:border-zinc-700 dark:bg-zinc-900">
         <flux:sidebar.toggle class="lg:hidden" icon="x-mark" />
 
-        <a href="{{ route('dashboard') }}" class="me-5 flex items-center space-x-2 rtl:space-x-reverse" wire:navigate>
-            <span class="text-zinc-800 font-semibold tracking-wide text-2xl dark:text-white/90">Kominfo</span>
+        <a href="{{ route('dashboard') }}" class="me-5 ms-2 flex items-center space-x-2 rtl:space-x-reverse"
+            wire:navigate>
+            <div class="dark:bg-zinc-100 rounded-md p-1">
+                <img src="{{ asset('images/dinkominfo-banyumas-logo.png') }}" alt="Dinkominfo Banyumas" class="h-8 w-8">
+            </div>
+            <span
+                class="text-zinc-800 font-bold tracking-tighter leading-none dark:text-white/90">Dinkominfo<br>Banyumas</span>
         </a>
 
         <flux:navlist variant="outline">
             <flux:navlist.group :heading="__('Platform')" class="grid">
                 <flux:navlist.item class="data-current:bg-accent!" icon="home" :href="route('dashboard')"
                     :current="request()->routeIs('dashboard')" wire:navigate>{{ __('Dashboard') }}</flux:navlist.item>
+                <flux:navlist.item class="data-current:bg-accent!" icon="document-plus" :href="route('admin.pengajuan')"
+                    :current="request()->routeIs('admin.pengajuan')" wire:navigate>{{ __('Pengajuan') }}
+                </flux:navlist.item>
             </flux:navlist.group>
         </flux:navlist>
 
         <flux:spacer />
-
-        <flux:navlist variant="outline">
-            <flux:navlist.item icon="folder-git-2" href="https://github.com/laravel/livewire-starter-kit"
-                target="_blank">
-                {{ __('Repository') }}
-            </flux:navlist.item>
-
-            <flux:navlist.item icon="book-open-text" href="https://laravel.com/docs/starter-kits#livewire"
-                target="_blank">
-                {{ __('Documentation') }}
-            </flux:navlist.item>
-        </flux:navlist>
 
         <!-- Desktop User Menu -->
         <flux:dropdown class="hidden lg:block" position="bottom" align="start">
