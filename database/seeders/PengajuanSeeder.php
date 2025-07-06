@@ -7,6 +7,7 @@ use App\Models\Pengajuan;
 use App\Models\User;
 use App\Models\Bidang;
 use Faker\Factory as Faker;
+use Carbon\Carbon;
 
 class PengajuanSeeder extends Seeder
 {
@@ -21,7 +22,6 @@ class PengajuanSeeder extends Seeder
         $faker = Faker::create('id_ID');
 
         // Ambil semua ID dari tabel User dan Bidang yang ada.
-        // Pastikan Anda sudah menjalankan seeder untuk User dan Bidang sebelumnya.
         $userIds = User::pluck('id')->all();
         $bidangIds = Bidang::pluck('id')->all();
 
@@ -36,14 +36,20 @@ class PengajuanSeeder extends Seeder
 
         // Buat 50 data pengajuan dummy
         for ($i = 0; $i < 50; $i++) {
-            // Tentukan tanggal mulai dan tanggal selesai
-            $tanggalMulai = $faker->dateTimeBetween('+1 month', '+2 months');
-            $tanggalSelesai = (clone $tanggalMulai)->modify('+3 months');
+            // PERUBAHAN: Buat tanggal pengajuan (created_at) secara acak dalam 3 tahun terakhir.
+            $tanggalPengajuan = $faker->dateTimeBetween('-3 years', 'now');
+
+            // Buat tanggal surat pengantar sebelum tanggal pengajuan
+            $tanggalSuratPengantar = (clone Carbon::instance($tanggalPengajuan))->subDays($faker->numberBetween(7, 30));
+
+            // Buat tanggal mulai magang setelah tanggal pengajuan
+            $tanggalMulai = (clone Carbon::instance($tanggalPengajuan))->addDays($faker->numberBetween(14, 60));
+            $tanggalSelesai = (clone $tanggalMulai)->addMonths(3);
 
             Pengajuan::create([
                 'user_id' => $faker->randomElement($userIds),
                 'nama' => $faker->name,
-                'nim_nis' => $faker->unique()->numerify('G1A021###'),
+                'nim_nis' => $faker->unique()->numerify('G1A0#####'),
                 'no_hp' => $faker->unique()->phoneNumber,
                 'email' => $faker->unique()->safeEmail,
                 'sekolah_universitas' => $faker->randomElement(['Universitas Jenderal Soedirman', 'Institut Teknologi Telkom Purwokerto', 'Universitas Muhammadiyah Purwokerto']),
@@ -51,13 +57,13 @@ class PengajuanSeeder extends Seeder
                 'bidang_id' => $faker->randomElement($bidangIds),
                 'tanggal_mulai' => $tanggalMulai,
                 'tanggal_selesai' => $tanggalSelesai,
-                'no_surat_pengantar' => '123/UNIV/X/' . (2025 - $i),
-                'tanggal_surat_pengantar' => $faker->dateTimeBetween('-1 month', 'now'),
+                'no_surat_pengantar' => '123/UNIV/X/' . $tanggalSuratPengantar->format('Y'),
+                'tanggal_surat_pengantar' => $tanggalSuratPengantar,
                 'surat_pengantar_path' => 'seeders/files/surat_pengantar.pdf',
                 'cv_path' => 'seeders/files/cv.pdf',
                 'status' => $faker->randomElement($statuses),
-                'created_at' => now(),
-                'updated_at' => now(),
+                'created_at' => $tanggalPengajuan,
+                'updated_at' => $tanggalPengajuan,
             ]);
         }
     }

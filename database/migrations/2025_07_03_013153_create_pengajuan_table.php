@@ -20,9 +20,9 @@ return new class extends Migration
                   ->onUpdate('cascade')
                   ->onDelete('cascade');
             $table->string('nama');
-            $table->string('nim_nis')->unique(); 
-            $table->string('no_hp')->unique();
-            $table->string('email')->unique();
+            $table->string('nim_nis'); 
+            $table->string('no_hp');
+            $table->string('email');
             $table->string('sekolah_universitas');
             $table->string('jurusan_prodi');
 
