@@ -19,11 +19,22 @@
         </a>
 
         <flux:navlist variant="outline">
-            <flux:navlist.group :heading="__('Platform')" class="grid">
-                <flux:navlist.item class="data-current:bg-accent!" icon="home" :href="route('dashboard')"
-                    :current="request()->routeIs('dashboard')" wire:navigate>{{ __('Dashboard') }}</flux:navlist.item>
-                <flux:navlist.item class="data-current:bg-accent!" icon="document-plus" :href="route('admin.pengajuan')"
-                    :current="request()->routeIs('admin.pengajuan')" wire:navigate>{{ __('Pengajuan') }}
+            <flux:navlist.group :heading="__('Menu')" class="grid">
+                <flux:navlist.item class="data-current:bg-accent!" icon="home" :href="route('home')"
+                    :current="request()->routeIs('home')" wire:navigate>
+                    {{ __('Home') }}
+                </flux:navlist.item>
+                <flux:navlist.item class="data-current:bg-accent!" icon="squares-2x2" :href="route('dashboard')"
+                    :current="request()->routeIs('dashboard')" wire:navigate>
+                    {{ __('Dashboard') }}
+                </flux:navlist.item>
+                <flux:navlist.item class="data-current:bg-accent!" icon="document-text"
+                    :href="route('admin.pengajuan.index')" :current="request()->routeIs('admin.pengajuan.index')"
+                    wire:navigate>
+                    {{ __('Pengajuan') }}
+                </flux:navlist.item>
+                <flux:navlist.item class="data-current:bg-accent!" icon="building-office" href="#">
+                    {{ __('Bidang') }}
                 </flux:navlist.item>
             </flux:navlist.group>
         </flux:navlist>
@@ -119,6 +130,8 @@
             </flux:menu>
         </flux:dropdown>
     </flux:header>
+
+    <x-mary-toast />
 
     {{ $slot }}
 
