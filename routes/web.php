@@ -14,8 +14,9 @@ Route::view('dashboard', 'dashboard')
 Route::middleware(['auth'])->group(function () {
     Route::redirect('settings', 'settings/profile');
     
-    Volt::route('admin/pengajuan', 'admin.pengajuan.index')->name('admin.pengajuan');
+    Volt::route('admin/pengajuan', 'admin.pengajuan.index')->name('admin.pengajuan.index');
     Volt::route('admin/pengajuan/create', 'admin.pengajuan.create')->name('admin.pengajuan.create');
+    Volt::route('admin/pengajuan/{pengajuan}/edit', 'admin.pengajuan.edit')->name('admin.pengajuan.edit');
     
     Volt::route('settings/profile', 'settings.profile')->name('settings.profile');
     Volt::route('settings/password', 'settings.password')->name('settings.password');

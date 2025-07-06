@@ -20,13 +20,13 @@ new
     #[Rule('required|string|max:255')]
     public string $nama = '';
 
-    #[Rule('required|string|max:255|unique:pengajuan,nim_nis')]
+    #[Rule('required|string|max:255')]
     public string $nim_nis = '';
 
-    #[Rule('required|string|max:255|unique:pengajuan,no_hp')]
+    #[Rule('required|string|max:255')]
     public string $no_hp = '';
 
-    #[Rule('required|email|max:255|unique:pengajuan,email')]
+    #[Rule('required|email|max:255')]
     public string $email = '';
 
     #[Rule('required|string|max:255')]
@@ -66,8 +66,20 @@ new
     {
         $validated = $this->validate();
         $validated['user_id'] = Auth::id();
-        $validated['surat_pengantar_path'] = $this->surat_pengantar_path->store('surat_pengantar', 'public');
-        $validated['cv_path'] = $this->cv_path->store('cv', 'public');
+
+        // Buat nama file baru untuk CV dan Surat Pengantar yang bersih dan unik
+        $sluggedName = Str::slug($this->nama);
+        $timestamp = now()->format('dmY-siH');
+
+        $suratExtension = $this->surat_pengantar_path->getClientOriginalExtension();
+        $newSuratName = "surat-pengantar-{$sluggedName}-{$timestamp}.{$suratExtension}";
+
+        $cvExtension = $this->cv_path->getClientOriginalExtension();
+        $newCvName = "cv-{$sluggedName}-{$timestamp}.{$cvExtension}";
+
+        // Simpan file dan masukkan path-nya ke array validated
+        $validated['surat_pengantar_path'] = $this->surat_pengantar_path->storeAs('surat_pengantar', $newSuratName, 'public');
+        $validated['cv_path'] = $this->cv_path->storeAs('cv', $newCvName, 'public');
 
         // Simpan pengajuan baru
         $pengajuan = Pengajuan::create([
@@ -99,7 +111,7 @@ new
         );
 
         // Redirect ke halaman pengajuan
-        return $this->redirect(route('admin.pengajuan'), navigate: true);
+        return $this->redirect(route('admin.pengajuan.index'), navigate: true);
     }
 
     public function with(): array
@@ -111,8 +123,8 @@ new
         $statusOptions = ['review', 'ditolak', 'diterima', 'berlangsung', 'selesai'];
         $statusCollection = collect($statusOptions)->map(function ($status) {
             return [
-                'id'   => $status,
-                'name' => Str::title($status) 
+                'id' => $status,
+                'name' => Str::title($status)
             ];
         });
         return [
@@ -127,68 +139,71 @@ new
     <x-mary-header class="mb-1!" title="Buat Pengajuan" subtitle="Buat pengajuan magang baru di Kominfo Banyumas"
         separator />
     <x-mary-form wire:submit="store">
-    <div>
-        {{-- SEKSI DATA DIRI & AKADEMIK --}}
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
-            <x-mary-input label="Nama Lengkap" placeholder="Nama lengkap anda..." wire:model="nama"
-                class="bg-transparent dark:bg-zinc-900 rounded-md" />
-            <x-mary-input label="NIM / NIS" placeholder="NIM/NIS anda..." wire:model="nim_nis"
-                class="bg-transparent dark:bg-zinc-900 rounded-md" />
-            <x-mary-input label="Nomor Handphone" wire:model="no_hp" placeholder="Isi dengan nomor WA aktif dan bisa dihubungi"
-                class="bg-transparent dark:bg-zinc-900 rounded-md" />
-            <x-mary-input label="Alamat Email" placeholder="Isi dengan email yang valid dan bisa dihubungi" wire:model="email" type="email"
-                class="bg-transparent dark:bg-zinc-900 rounded-md" />
-            <x-mary-input label="Sekolah / Universitas" placeholder="Nama lengkap sekolah / perguruan tinggi anda..." wire:model="sekolah_universitas"
-                class="bg-transparent dark:bg-zinc-900 rounded-md" />
-            <x-mary-input label="Jurusan / Program Studi" placeholder="Jurusan / Program studi anda..." wire:model="jurusan_prodi"
-                class="bg-transparent dark:bg-zinc-900 rounded-md" />
+        <div>
+            {{-- SEKSI DATA DIRI & AKADEMIK --}}
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
+                <x-mary-input label="Nama Lengkap" placeholder="Nama lengkap anda..." wire:model="nama"
+                    class="bg-transparent dark:bg-zinc-900 rounded-md" />
+                <x-mary-input label="NIM / NIS" placeholder="NIM/NIS anda..." wire:model="nim_nis"
+                    class="bg-transparent dark:bg-zinc-900 rounded-md" />
+                <x-mary-input label="Nomor Handphone" wire:model="no_hp"
+                    placeholder="Isi dengan nomor WA aktif dan bisa dihubungi"
+                    class="bg-transparent dark:bg-zinc-900 rounded-md" />
+                <x-mary-input label="Alamat Email" placeholder="Isi dengan email yang valid dan bisa dihubungi"
+                    wire:model="email" type="email" class="bg-transparent dark:bg-zinc-900 rounded-md" />
+                <x-mary-input label="Sekolah / Universitas"
+                    placeholder="Nama lengkap sekolah / perguruan tinggi anda..." wire:model="sekolah_universitas"
+                    class="bg-transparent dark:bg-zinc-900 rounded-md" />
+                <x-mary-input label="Jurusan / Program Studi" placeholder="Jurusan / Program studi anda..."
+                    wire:model="jurusan_prodi" class="bg-transparent dark:bg-zinc-900 rounded-md" />
+            </div>
+
+            <hr class="border-t-zinc-200 dark:border-t-zinc-700 mt-10 mb-6" />
+
+            {{-- SEKSI DETAIL MAGANG --}}
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
+                <div class="md:col-span-2">
+                    <x-mary-select label="Bidang yang diminati" placeholder="Pilih Bidang..." wire:model="bidang_id"
+                        :options="$bidangOptions" class="bg-transparent dark:bg-zinc-900 rounded-md" />
+                </div>
+                <x-mary-datepicker label="Tanggal Mulai" wire:model="tanggal_mulai" icon="o-calendar"
+                    class="bg-transparent dark:bg-zinc-900 rounded-md" />
+                <x-mary-datepicker label="Tanggal Selesai" wire:model="tanggal_selesai" icon="o-calendar"
+                    class="bg-transparent dark:bg-zinc-900 rounded-md" />
+            </div>
+
+            <hr class="border-t-zinc-200 dark:border-t-zinc-700 mt-10 mb-6" />
+
+            {{-- SEKSI DOKUMEN --}}
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
+                <x-mary-input label="Nomor Surat Pengantar" placeholder="Contoh: 933/AKD11/KP-WD1/2025"
+                    wire:model="no_surat_pengantar" class="bg-transparent dark:bg-zinc-900 rounded-md" />
+                <x-mary-datepicker label="Tanggal Surat Pengantar" wire:model="tanggal_surat_pengantar"
+                    icon="o-calendar" class="bg-transparent dark:bg-zinc-900 rounded-md" />
+
+                <div class="md:col-span-2">
+                    <x-mary-file label="Surat Pengantar" wire:model="surat_pengantar_path" hint="Hanya PDF, Maks 2MB"
+                        accept="application/pdf" class="bg-transparent dark:bg-zinc-900 rounded-md" />
+                </div>
+
+                <div class="md:col-span-2">
+                    <x-mary-file label="Curriculum Vitae (CV)" wire:model="cv_path" hint="Hanya PDF, Maks 2MB"
+                        accept="application/pdf" class="rounded-md" />
+                </div>
+
+                <div class="md:col-span-2">
+                    <x-mary-select label="Status" :options="$statusCollection" wire:model="status"
+                        placeholder="Pilih Status Magang" class="bg-transparent dark:bg-zinc-900 rounded-md" />
+                </div>
+            </div>
         </div>
 
-        <hr class="border-t-zinc-200 dark:border-t-zinc-700 mt-10 mb-6" />
-
-        {{-- SEKSI DETAIL MAGANG --}}
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
-            <div class="md:col-span-2">
-                <x-mary-select label="Bidang yang diminati" placeholder="Pilih Bidang..." wire:model="bidang_id" :options="$bidangOptions" class="bg-transparent dark:bg-zinc-900 rounded-md" />
-            </div>
-            <x-mary-datepicker label="Tanggal Mulai" wire:model="tanggal_mulai" icon="o-calendar"
-                class="bg-transparent dark:bg-zinc-900 rounded-md" />
-            <x-mary-datepicker label="Tanggal Selesai" wire:model="tanggal_selesai" icon="o-calendar"
-                class="bg-transparent dark:bg-zinc-900 rounded-md" />
-        </div>
-
-        <hr class="border-t-zinc-200 dark:border-t-zinc-700 mt-10 mb-6" />
-
-        {{-- SEKSI DOKUMEN --}}
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
-            <x-mary-input label="Nomor Surat Pengantar" placeholder="Contoh: 933/AKD11/KP-WD1/2025" wire:model="no_surat_pengantar"
-                class="bg-transparent dark:bg-zinc-900 rounded-md" />
-            <x-mary-datepicker label="Tanggal Surat Pengantar" wire:model="tanggal_surat_pengantar" icon="o-calendar"
-                class="bg-transparent dark:bg-zinc-900 rounded-md" />
-
-            <div class="md:col-span-2">
-                <x-mary-file label="Surat Pengantar" wire:model="surat_pengantar_path" hint="Hanya PDF, Maks 2MB"
-                    accept="application/pdf" class="bg-transparent dark:bg-zinc-900 rounded-md" />
-            </div>
-
-            <div class="md:col-span-2">
-                <x-mary-file label="Curriculum Vitae (CV)" wire:model="cv_path" hint="Hanya PDF, Maks 2MB"
-                    accept="application/pdf" class="rounded-md" />
-            </div>
-
-            <div class="md:col-span-2">
-                <x-mary-select label="Status" :options="$statusCollection" wire:model="status"
-                    placeholder="Pilih Status Magang" class="bg-transparent dark:bg-zinc-900 rounded-md" />
-            </div>
-        </div>
-    </div>
-
-    {{-- Form Actions --}}
-    <x-slot:actions>
-        <x-mary-button label="Batal" link="{{ route('dashboard') }}"
-            class="btn-primary dark:btn-neutral rounded-lg" wire:navigate />
-        <x-mary-button label="Kirim Pengajuan" icon="o-paper-airplane" spinner="store" type="submit"
-            class="btn-primary dark:btn-neutral rounded-lg" />
-    </x-slot:actions>
+        {{-- Form Actions --}}
+        <x-slot:actions>
+            <x-mary-button label="Batal" link="{{ route('dashboard') }}" class="btn-primary dark:btn-neutral rounded-lg"
+                wire:navigate />
+            <x-mary-button label="Kirim Pengajuan" icon="o-document-plus" spinner="store" type="submit"
+                class="btn-primary dark:btn-neutral rounded-lg" />
+        </x-slot:actions>
     </x-mary-form>
 </div>
