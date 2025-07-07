@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Facades\Storage;
 
 class Pengajuan extends Model
 {
@@ -49,6 +50,26 @@ class Pengajuan extends Model
         'tanggal_surat_pengantar' => 'date',
         'status' => 'string',
     ];
+
+    /**
+     * The "booted" method of the model.
+     *
+     * @return void
+     */
+    protected static function booted(): void
+    {
+        static::deleting(function (Pengajuan $pengajuan) {
+            // Hapus file surat pengantar jika ada
+            if ($pengajuan->surat_pengantar_path) {
+                Storage::disk('public')->delete($pengajuan->surat_pengantar_path);
+            }
+
+            // Hapus file CV jika ada
+            if ($pengajuan->cv_path) {
+                Storage::disk('public')->delete($pengajuan->cv_path);
+            }
+        });
+    }
 
     public function bidang(): BelongsTo
     {
