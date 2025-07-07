@@ -10,7 +10,7 @@ use Mary\Traits\Toast;
 
 new
     #[Layout('components.layouts.app')]
-    #[Title('Pengajuan')]
+    #[Title('Kelola Pengajuan')]
     class extends Component {
 
     use WithPagination, Toast;
@@ -380,7 +380,7 @@ new
                     <div>
                         <h3 class="font-bold text-lg mb-3">Tindakan</h3>
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <x-mary-button label="Edit Pengajuan" icon-right="o-pencil-square"
+                            <x-mary-button label="Edit Pengajuan" icon="o-pencil-square"
                                 link="{{ route('admin.pengajuan.edit', ['pengajuan' => $selectedPengajuan->id]) }}"
                                 class="btn-primary rounded-md dark:btn-neutral" />
                             <x-mary-button label="Hapus pengajuan" icon="o-trash"

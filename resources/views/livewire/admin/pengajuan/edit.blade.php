@@ -143,13 +143,17 @@ new
      */
     public function with(): array
     {
+        $BidangOptions = Bidang::select('id', 'nama', 'kuota')->orderBy('nama', 'asc')->get()->map(function ($bidang) {
+            return ['id' => $bidang->id, 'name' => "{$bidang->nama} (Kuota: {$bidang->kuota})"];
+        })->all();
+
         $statusOptions = collect(['review', 'ditolak', 'diterima', 'berlangsung', 'selesai'])
             ->map(function ($status) {
                 return ['id' => $status, 'name' => Str::title($status)];
             });
 
         return [
-            'bidangOptions' => Bidang::select('id', 'nama as name')->get(),
+            'bidangOptions' => $BidangOptions,
             'statusOptions' => $statusOptions,
         ];
     }

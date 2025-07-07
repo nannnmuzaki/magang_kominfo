@@ -116,8 +116,8 @@ new
 
     public function with(): array
     {
-        $BidangOptions = Bidang::get()->map(function ($bidang) {
-            return ['id' => $bidang->id, 'name' => $bidang->nama];
+        $BidangOptions = Bidang::select('id', 'nama', 'kuota')->orderBy('nama', 'asc')->get()->map(function ($bidang) {
+            return ['id' => $bidang->id, 'name' => "{$bidang->nama} (Kuota: {$bidang->kuota})"];
         })->all();
 
         $statusOptions = ['review', 'ditolak', 'diterima', 'berlangsung', 'selesai'];
