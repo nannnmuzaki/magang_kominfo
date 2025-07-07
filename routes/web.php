@@ -18,6 +18,8 @@ Route::middleware(['auth'])->group(function () {
     Volt::route('admin/pengajuan/create', 'admin.pengajuan.create')->name('admin.pengajuan.create');
     Volt::route('admin/pengajuan/{pengajuan}/edit', 'admin.pengajuan.edit')->name('admin.pengajuan.edit');
     
+    Volt::route('admin/bidang', 'admin.bidang.index')->name('admin.bidang.index');
+
     Volt::route('settings/profile', 'settings.profile')->name('settings.profile');
     Volt::route('settings/password', 'settings.password')->name('settings.password');
     Volt::route('settings/appearance', 'settings.appearance')->name('settings.appearance');
