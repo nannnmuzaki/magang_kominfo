@@ -227,7 +227,7 @@ new
 
         {{-- Form Actions --}}
         <x-slot:actions>
-            <x-mary-button label="Batal" link="{{ route('admin.pengajuan') }}"
+            <x-mary-button label="Batal" link="{{ route('admin.pengajuan.index') }}"
                 class="btn-primary dark:btn-neutral rounded-lg" wire:navigate />
             <x-mary-button label="Simpan Perubahan" icon="o-document-check" spinner="update" type="submit"
                 class="btn-primary dark:btn-neutral rounded-lg" />
