@@ -33,7 +33,9 @@
                     wire:navigate>
                     {{ __('Pengajuan') }}
                 </flux:navlist.item>
-                <flux:navlist.item class="data-current:bg-accent!" icon="building-office" href="#">
+                <flux:navlist.item class="data-current:bg-accent!" icon="building-office"
+                    :href="route('admin.bidang.index')" :current="request()->routeIs('admin.bidang.index')"
+                    wire:navigate>
                     {{ __('Bidang') }}
                 </flux:navlist.item>
             </flux:navlist.group>

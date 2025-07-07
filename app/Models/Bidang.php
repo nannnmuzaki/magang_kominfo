@@ -26,6 +26,14 @@ class Bidang extends Model
         'kuota',
     ];
 
+    /**
+     *
+     * @var array<string, string>
+     */
+    protected $casts = [
+        'kuota' => 'integer',
+    ];
+
     public function pengajuan(): HasMany
     {
         return $this->hasMany(Pengajuan::class);
