@@ -111,7 +111,7 @@ new
         );
 
         // Redirect ke halaman pengajuan
-        return $this->redirect(route('admin.pengajuan.index'), navigate: true);
+        return $this->redirect(route('pengajuan.index'), navigate: true);
     }
 
     public function with(): array

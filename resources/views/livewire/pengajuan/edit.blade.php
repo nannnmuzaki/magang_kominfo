@@ -69,6 +69,8 @@ new
      */
     public function mount(Pengajuan $pengajuan): void
     {
+        $this->authorize('update', $pengajuan);
+
         $this->pengajuan = $pengajuan;
 
         $this->nama = $pengajuan->nama;
@@ -92,6 +94,8 @@ new
      */
     public function update()
     {
+        $this->authorize('update', $this->pengajuan);
+
         $validated = $this->validate();
 
         // 1. Update data teks terlebih dahulu, dengan mengecualikan field file.
@@ -135,7 +139,7 @@ new
             timeout: 3000
         );
 
-        return $this->redirect(route('admin.pengajuan.index'), navigate: true);
+        return $this->redirect(route('pengajuan.index'), navigate: true);
     }
 
     /**

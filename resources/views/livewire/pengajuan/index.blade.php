@@ -24,10 +24,17 @@ new
 
     public function pengajuanDetail($pengajuanId)
     {
-        $this->detailDrawer = true;
         try {
             $this->selectedPengajuan = Pengajuan::with('bidang')->findOrFail($pengajuanId);
+
+            // Pastikan user memiliki izin untuk melihat pengajuan ini
+            $this->authorize('view', $this->selectedPengajuan);
+
+            // Set status pengajuan yang dipilih
             $this->selectedPengajuanStatus = $this->selectedPengajuan->status;
+
+            // Tampilkan drawer detail
+            $this->detailDrawer = true;
         } catch (\Exception $e) {
             $this->error('Pengajuan tidak ditemukan atau terjadi kesalahan saat mengambil data.');
             return [];
@@ -107,12 +114,17 @@ new
         {{-- Scope untuk tombol aksi --}}
         @scope('cell_detail', $pengajuan)
         <div class="flex items-center space-x-2">
-            <x-mary-button label="Edit" icon-right="o-pencil-square"
-                link="{{ route('pengajuan.edit', ['pengajuan' => $pengajuan->id]) }}"
-                class="btn-sm btn-primary rounded-md dark:btn-neutral" />
-            <x-mary-button label="Lihat" icon-right="o-document-magnifying-glass"
-                wire:click="pengajuanDetail('{{ $pengajuan->id }}')" spinner
-                class="btn-sm rounded-md dark:btn-neutral" />
+            @can('update', $pengajuan)
+                <x-mary-button label="Edit" icon-right="o-pencil-square"
+                    link="{{ route('pengajuan.edit', ['pengajuan' => $pengajuan->id]) }}"
+                    class="btn-sm btn-primary rounded-md dark:btn-neutral" />
+            @endcan
+
+            @can('view', $pengajuan)
+                <x-mary-button label="Lihat" icon-right="o-document-magnifying-glass"
+                    wire:click="pengajuanDetail('{{ $pengajuan->id }}')" spinner
+                    class="btn-sm rounded-md dark:btn-neutral" />
+            @endcan
         </div>
         @endscope
     </x-mary-table>
