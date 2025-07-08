@@ -24,20 +24,32 @@
                     :current="request()->routeIs('home')" wire:navigate>
                     {{ __('Home') }}
                 </flux:navlist.item>
-                <flux:navlist.item class="data-current:bg-accent!" icon="squares-2x2" :href="route('dashboard')"
-                    :current="request()->routeIs('dashboard')" wire:navigate>
-                    {{ __('Dashboard') }}
-                </flux:navlist.item>
-                <flux:navlist.item class="data-current:bg-accent!" icon="document-text"
-                    :href="route('admin.pengajuan.index')" :current="request()->routeIs('admin.pengajuan.index')"
-                    wire:navigate>
-                    {{ __('Pengajuan') }}
-                </flux:navlist.item>
-                <flux:navlist.item class="data-current:bg-accent!" icon="building-office"
-                    :href="route('admin.bidang.index')" :current="request()->routeIs('admin.bidang.index')"
-                    wire:navigate>
-                    {{ __('Bidang') }}
-                </flux:navlist.item>
+                @can('is-admin')
+                    <flux:navlist.item class="data-current:bg-accent!" icon="squares-2x2" :href="route('admin.dashboard')"
+                        :current="request()->routeIs('admin.dashboard')" wire:navigate>
+                        {{ __('Dashboard') }}
+                    </flux:navlist.item>
+                    <flux:navlist.item class="data-current:bg-accent!" icon="document-text"
+                        :href="route('admin.pengajuan.index')" :current="request()->routeIs('admin.pengajuan.index')"
+                        wire:navigate>
+                        {{ __('Pengajuan') }}
+                    </flux:navlist.item>
+                    <flux:navlist.item class="data-current:bg-accent!" icon="building-office"
+                        :href="route('admin.bidang.index')" :current="request()->routeIs('admin.bidang.index')"
+                        wire:navigate>
+                        {{ __('Bidang') }}
+                    </flux:navlist.item>
+                @endcan
+                @can('is-user')
+                    <flux:navlist.item class="data-current:bg-accent!" icon="squares-2x2" :href="route('dashboard')"
+                        :current="request()->routeIs('dashboard')" wire:navigate>
+                        {{ __('Dashboard') }}
+                    </flux:navlist.item>
+                    <flux:navlist.item class="data-current:bg-accent!" icon="document-text" :href="route('pengajuan.index')"
+                        :current="request()->routeIs('admin.pengajuan.index')" wire:navigate>
+                        {{ __('Pengajuan') }}
+                    </flux:navlist.item>
+                @endcan
             </flux:navlist.group>
         </flux:navlist>
 
@@ -56,8 +68,7 @@
                                 <span
                                     class="flex h-full w-full items-center justify-center rounded-lg bg-neutral-200 text-black dark:bg-neutral-700 dark:text-white">
                                     {{ auth()->user()->initials() }}
-                                </span>
-                            </span>
+                                </span> </span>
 
                             <div class="grid flex-1 text-start text-sm leading-tight">
                                 <span class="truncate font-semibold">{{ auth()->user()->name }}</span>
@@ -103,8 +114,7 @@
                                 <span
                                     class="flex h-full w-full items-center justify-center rounded-lg bg-neutral-200 text-black dark:bg-neutral-700 dark:text-white">
                                     {{ auth()->user()->initials() }}
-                                </span>
-                            </span>
+                                </span> </span>
 
                             <div class="grid flex-1 text-start text-sm leading-tight">
                                 <span class="truncate font-semibold">{{ auth()->user()->name }}</span>
