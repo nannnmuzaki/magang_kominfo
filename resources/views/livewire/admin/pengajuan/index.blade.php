@@ -1,12 +1,14 @@
 <?php
 
 use Livewire\Volt\Component;
-use Livewire\Attributes\{Layout, Title};
+use Livewire\Attributes\{Layout, Title, Rule};
 use Livewire\WithPagination;
 use App\Models\Pengajuan;
 use App\Models\Bidang;
 use Illuminate\Support\Str;
 use Mary\Traits\Toast;
+use PhpOffice\PhpWord\TemplateProcessor;
+use Carbon\Carbon;
 
 new
     #[Layout('components.layouts.app')]
@@ -32,6 +34,70 @@ new
     public bool $deleteModal = false;
     public ?string $pengajuanToDeleteId = null;
     public ?string $pengajuanToDeleteName = null;
+
+    // Properti untuk modal generate surat balasan
+    public bool $generateModal = false;
+    #[Rule('required|string|max:255')]
+    public string $nomorSuratBalasan = '';
+
+    /**
+     * buka modal untuk mengenerate surat balasan.
+     */
+    public function startGenerateDocxBalasan()
+    {
+        if (!$this->selectedPengajuan) {
+            $this->error('Silakan pilih pengajuan terlebih dahulu.');
+            return;
+        }
+
+        // Tampilkan modal generate surat balasan
+        $this->generateModal = true;
+    }
+
+    /**
+     * Menghasilkan surat keterangan dalam format PDF.
+     */
+    public function generateDocxBalasan()
+    {
+        try {
+            // Path ke template Word 
+            $templatePath = storage_path('app/templates/template-surat-balasan.docx');
+            if (!file_exists($templatePath)) {
+                $this->error('Template surat tidak ditemukan.');
+                return;
+            }
+
+            // 1. Load template
+            $templateProcessor = new TemplateProcessor($templatePath);
+
+            // 2. Ganti placeholder dengan data
+            $templateProcessor->setValue('nomor_surat', $this->nomorSuratBalasan);
+            $templateProcessor->setValue('nomor_surat_pengantar', $this->selectedPengajuan->no_surat_pengantar);
+            $templateProcessor->setValue('nama', $this->selectedPengajuan->nama);
+            $templateProcessor->setValue('nim_nis', $this->selectedPengajuan->nim_nis);
+            $templateProcessor->setValue('sekolah_universitas', $this->selectedPengajuan->sekolah_universitas);
+            $templateProcessor->setValue('jurusan_prodi', $this->selectedPengajuan->jurusan_prodi);
+            $templateProcessor->setValue('bidang', $this->selectedPengajuan->bidang->nama);
+            $templateProcessor->setValue('tanggal_surat_pengantar', $this->selectedPengajuan->tanggal_surat_pengantar->locale('id')->translatedFormat('d F Y'));
+            $templateProcessor->setValue('tanggal_mulai', $this->selectedPengajuan->tanggal_mulai->locale('id')->translatedFormat('d F Y'));
+            $templateProcessor->setValue('tanggal_selesai', $this->selectedPengajuan->tanggal_selesai->locale('id')->translatedFormat('d F Y'));
+            $templateProcessor->setValue('tanggal_surat_dibuat', now()->locale('id')->translatedFormat('d F Y'));
+
+            // 3. Simpan sebagai file Word sementara
+            $slugNama = Str::slug($this->selectedPengajuan->nama);
+            $docxPath = storage_path("app/temp/surat-balasan-{$slugNama}.docx");
+            $templateProcessor->saveAs($docxPath);
+
+            // 4. Kembalikan file .docx sebagai download dan hapus setelah dikirim
+            return response()->download($docxPath)->deleteFileAfterSend(true);
+
+            $this->generateModal = false; // Tutup modal
+
+        } catch (\Exception $e) {
+            // Tampilkan pesan error jika terjadi masalah
+            $this->error('Gagal membuat Surat Balasan: ' . $e->getMessage());
+        }
+    }
 
     public function pengajuanDetail($pengajuanId)
     {
@@ -315,17 +381,17 @@ new
                             <div class="flex justify-between gap-8 font-semibold">
                                 <span class="text-gray-500 dark:text-gray-400">Tanggal Surat Pengantar</span>
                                 <span
-                                    class="font-semibold text-right">{{ Carbon\Carbon::parse($selectedPengajuan->tanggal_surat_pengantar)->locale('id')->translatedFormat('d F Y') }}</span>
+                                    class="font-semibold text-right">{{ Carbon::parse($selectedPengajuan->tanggal_surat_pengantar)->locale('id')->translatedFormat('d F Y') }}</span>
                             </div>
                             <div class="flex justify-between gap-8 font-semibold">
                                 <span class="text-gray-500 dark:text-gray-400">Tanggal Mulai</span>
                                 <span
-                                    class="font-semibold text-right">{{ Carbon\Carbon::parse($selectedPengajuan->tanggal_mulai)->locale('id')->translatedFormat('d F Y') }}</span>
+                                    class="font-semibold text-right">{{ Carbon::parse($selectedPengajuan->tanggal_mulai)->locale('id')->translatedFormat('d F Y') }}</span>
                             </div>
                             <div class="flex justify-between gap-8 font-semibold">
                                 <span class="text-gray-500 dark:text-gray-400">Tanggal Selesai</span>
                                 <span
-                                    class="font-semibold text-right">{{ Carbon\Carbon::parse($selectedPengajuan->tanggal_selesai)->locale('id')->translatedFormat('d F Y') }}</span>
+                                    class="font-semibold text-right">{{ Carbon::parse($selectedPengajuan->tanggal_selesai)->locale('id')->translatedFormat('d F Y') }}</span>
                             </div>
                             <div class="flex justify-between gap-8 font-semibold items-center">
                                 <span class="text-gray-500 dark:text-gray-400">Status Saat Ini</span>
@@ -379,7 +445,10 @@ new
                     {{-- AKSI/TINDAKAN --}}
                     <div>
                         <h3 class="font-bold text-lg mb-3">Tindakan</h3>
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <x-mary-button label="Generate Surat Balasan" icon="o-document-arrow-down"
+                            wire:click="startGenerateDocxBalasan" spinner
+                            class="btn-primary rounded-md dark:btn-neutral w-full mb-3" />
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-2">
                             <x-mary-button label="Edit Pengajuan" icon="o-pencil-square"
                                 link="{{ route('admin.pengajuan.edit', ['pengajuan' => $selectedPengajuan->id]) }}"
                                 class="btn-primary rounded-md dark:btn-neutral" />
@@ -402,19 +471,40 @@ new
         </x-slot:actions>
     </x-mary-drawer>
 
-    {{-- MODAL KONFIRMASI HAPUS --}}
-    <x-mary-modal wire:model="deleteModal" title="Konfirmasi Hapus">
-        <hr class="border-t-zinc-300 dark:border-t-zinc-700 mb-4 -mt-2" />
-        <div>Apakah Anda yakin ingin menghapus pengajuan dari <span
-                class="font-bold">{{ $pengajuanToDeleteName }}</span>?</div>
-        <div class="text-sm text-gray-500 mt-3">Tindakan ini tidak dapat dibatalkan. Semua data dan file terkait akan
-            dihapus secara permanen.</div>
+    @if ($this->deleteModal)
+        {{-- MODAL KONFIRMASI HAPUS --}}
+        <x-mary-modal wire:model="deleteModal" title="Konfirmasi Hapus">
+            <hr class="border-t-zinc-300 dark:border-t-zinc-700 mb-4 -mt-2" />
+            <div>Apakah Anda yakin ingin menghapus pengajuan dari <span
+                    class="font-bold">{{ $pengajuanToDeleteName }}</span>?</div>
+            <div class="text-sm text-gray-500 mt-3">Tindakan ini tidak dapat dibatalkan. Semua data dan file terkait akan
+                dihapus secara permanen.</div>
 
-        <x-slot:actions>
-            <x-mary-button label="Batal" @click="$wire.deleteModal = false"
-                class="btn-primary dark:btn-neutral rounded-md" />
-            <x-mary-button label="Hapus" icon="o-trash" wire:click="confirmDelete"
-                class="btn-error bg-red-500 text-primary-content dark:bg-red-600 rounded-md" spinner="confirmDelete" />
-        </x-slot:actions>
-    </x-mary-modal>
+            <x-slot:actions>
+                <x-mary-button label="Batal" @click="$wire.deleteModal = false"
+                    class="btn-primary dark:btn-neutral rounded-md" />
+                <x-mary-button label="Hapus" icon="o-trash" wire:click="confirmDelete"
+                    class="btn-error bg-red-500 text-primary-content dark:bg-red-600 rounded-md" spinner="confirmDelete" />
+            </x-slot:actions>
+        </x-mary-modal>
+    @endif
+
+    @if ($this->generateModal)
+        {{-- MODAL GENERATE SURAT BALASAN --}}
+        <x-mary-modal wire:model="generateModal" title="Generate Surat Balasan" box-class="dark:bg-zinc-800 rounded-md">
+            <hr class="border-t-zinc-300 dark:border-t-zinc-700 mb-4 -mt-2" />
+
+            <x-mary-form wire:submit="generateDocxBalasan">
+                <x-mary-input label="Nomor Surat Balasan" placeholder="Nomor Surat Balasan..."
+                    wire:model="nomorSuratBalasan" class="bg-transparent dark:bg-transparent rounded-md" />
+
+                <x-slot:actions>
+                    <x-mary-button label="Batal" @click="$wire.generateModal = false"
+                        class="btn-primary dark:btn-neutral rounded-md" />
+                    <x-mary-button label="Generate" wire:click="generateDocxBalasan" spinner
+                        class="btn-primary rounded-md" />
+                </x-slot:actions>
+            </x-mary-form>
+        </x-mary-modal>
+    @endif
 </div>
