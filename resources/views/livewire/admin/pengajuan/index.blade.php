@@ -36,9 +36,14 @@ new
     public ?string $pengajuanToDeleteName = null;
 
     // Properti untuk modal generate surat balasan
-    public bool $generateModal = false;
+    public bool $generateBalasanModal = false;
     #[Rule('required|string|max:255')]
     public string $nomorSuratBalasan = '';
+
+    // Properti untuk modal generate surat selesai
+    public bool $generateSelesaiModal = false;
+    #[Rule('required|string|max:255')]
+    public string $nomorSuratSelesai = '';
 
     /**
      * buka modal untuk mengenerate surat balasan.
@@ -51,11 +56,11 @@ new
         }
 
         // Tampilkan modal generate surat balasan
-        $this->generateModal = true;
+        $this->generateBalasanModal = true;
     }
 
     /**
-     * Menghasilkan surat keterangan dalam format PDF.
+     * Menghasilkan surat balasan.
      */
     public function generateDocxBalasan()
     {
@@ -91,11 +96,66 @@ new
             // 4. Kembalikan file .docx sebagai download dan hapus setelah dikirim
             return response()->download($docxPath)->deleteFileAfterSend(true);
 
-            $this->generateModal = false; // Tutup modal
+            $this->generateBalasanModal = false; // Tutup modal
 
         } catch (\Exception $e) {
             // Tampilkan pesan error jika terjadi masalah
             $this->error('Gagal membuat Surat Balasan: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * buka modal untuk mengenerate surat balasan.
+     */
+    public function startGenerateDocxSelesai()
+    {
+        if (!$this->selectedPengajuan) {
+            $this->error('Silakan pilih pengajuan terlebih dahulu.');
+            return;
+        }
+
+        // Tampilkan modal generate surat balasan
+        $this->generateSelesaiModal = true;
+    }
+
+    /**
+     * Menghasilkan surat selesai.
+     */
+    public function generateDocxSelesai()
+    {
+        try {
+            // Path ke template Word 
+            $templatePath = storage_path('app/templates/template-surat-selesai.docx');
+            if (!file_exists($templatePath)) {
+                $this->error('Template surat tidak ditemukan.');
+                return;
+            }
+
+            // 1. Load template
+            $templateProcessor = new TemplateProcessor($templatePath);
+
+            // 2. Ganti placeholder dengan data
+            $templateProcessor->setValue('nomor_surat_selesai', $this->nomorSuratSelesai);
+            $templateProcessor->setValue('nama', $this->selectedPengajuan->nama);
+            $templateProcessor->setValue('nim_nis', $this->selectedPengajuan->nim_nis);
+            $templateProcessor->setValue('jurusan_prodi', $this->selectedPengajuan->jurusan_prodi);
+            $templateProcessor->setValue('tanggal_mulai', $this->selectedPengajuan->tanggal_mulai->locale('id')->translatedFormat('d F Y'));
+            $templateProcessor->setValue('tanggal_selesai', $this->selectedPengajuan->tanggal_selesai->locale('id')->translatedFormat('d F Y'));
+            $templateProcessor->setValue('tanggal_surat_dibuat', now()->locale('id')->translatedFormat('d F Y'));
+
+            // 3. Simpan sebagai file Word sementara
+            $slugNama = Str::slug($this->selectedPengajuan->nama);
+            $docxPath = storage_path("app/temp/surat-selesai-{$slugNama}.docx");
+            $templateProcessor->saveAs($docxPath);
+
+            // 4. Kembalikan file .docx sebagai download dan hapus setelah dikirim
+            return response()->download($docxPath)->deleteFileAfterSend(true);
+
+            $this->generateSelesaiModal = false; // Tutup modal
+
+        } catch (\Exception $e) {
+            // Tampilkan pesan error jika terjadi masalah
+            $this->error('Gagal membuat Surat Selesai: ' . $e->getMessage());
         }
     }
 
@@ -448,6 +508,11 @@ new
                         <x-mary-button label="Generate Surat Balasan" icon="o-document-arrow-down"
                             wire:click="startGenerateDocxBalasan" spinner
                             class="btn-primary rounded-md dark:btn-neutral w-full mb-3" />
+                        @if ($selectedPengajuan->status === 'selesai')
+                            <x-mary-button label="Generate Surat Selesai" icon="o-document-arrow-down"
+                                wire:click="startGenerateDocxSelesai" spinner
+                                class="btn-primary rounded-md dark:btn-neutral w-full mb-3" />
+                        @endif
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-2">
                             <x-mary-button label="Edit Pengajuan" icon="o-pencil-square"
                                 link="{{ route('admin.pengajuan.edit', ['pengajuan' => $selectedPengajuan->id]) }}"
@@ -489,9 +554,10 @@ new
         </x-mary-modal>
     @endif
 
-    @if ($this->generateModal)
+    @if ($this->generateBalasanModal)
         {{-- MODAL GENERATE SURAT BALASAN --}}
-        <x-mary-modal wire:model="generateModal" title="Generate Surat Balasan" box-class="dark:bg-zinc-800 rounded-md">
+        <x-mary-modal wire:model="generateBalasanModal" title="Generate Surat Balasan"
+            box-class="dark:bg-zinc-800 rounded-md">
             <hr class="border-t-zinc-300 dark:border-t-zinc-700 mb-4 -mt-2" />
 
             <x-mary-form wire:submit="generateDocxBalasan">
@@ -499,9 +565,29 @@ new
                     wire:model="nomorSuratBalasan" class="bg-transparent dark:bg-transparent rounded-md" />
 
                 <x-slot:actions>
-                    <x-mary-button label="Batal" @click="$wire.generateModal = false"
+                    <x-mary-button label="Batal" @click="$wire.generateBalasanModal = false"
                         class="btn-primary dark:btn-neutral rounded-md" />
                     <x-mary-button label="Generate" wire:click="generateDocxBalasan" spinner
+                        class="btn-primary rounded-md" />
+                </x-slot:actions>
+            </x-mary-form>
+        </x-mary-modal>
+    @endif
+
+    @if ($this->generateSelesaiModal)
+        {{-- MODAL GENERATE SURAT BALASAN --}}
+        <x-mary-modal wire:model="generateSelesaiModal" title="Generate Surat Balasan"
+            box-class="dark:bg-zinc-800 rounded-md">
+            <hr class="border-t-zinc-300 dark:border-t-zinc-700 mb-4 -mt-2" />
+
+            <x-mary-form wire:submit="generateDocxSelesai">
+                <x-mary-input label="Nomor Surat Balasan" placeholder="Nomor Surat Balasan..."
+                    wire:model="nomorSuratSelesai" class="bg-transparent dark:bg-transparent rounded-md" />
+
+                <x-slot:actions>
+                    <x-mary-button label="Batal" @click="$wire.generateSelesaiModal = false"
+                        class="btn-primary dark:btn-neutral rounded-md" />
+                    <x-mary-button label="Generate" wire:click="generateDocxSelesai" spinner
                         class="btn-primary rounded-md" />
                 </x-slot:actions>
             </x-mary-form>

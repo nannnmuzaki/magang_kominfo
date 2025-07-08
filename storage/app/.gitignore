@@ -2,5 +2,6 @@
 !private/
 !public/
 !templates/
+!templates/*
 !temp/
 !.gitignore
