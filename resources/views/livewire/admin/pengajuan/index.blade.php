@@ -362,12 +362,11 @@ new
 
         @scope('cell_bidang.nama', $pengajuan)
         {{-- Akses nama bidang langsung dari relasi yang sudah di-load --}}
-        <span class="font-medium">
+        <span class="font-medium flex flex-col gap-1">
             {{ $pengajuan->bidang->nama ?? 'N/A' }}
-            <br>
-            <span class="text-xs">
+            <span class="text-xs p-1 px-2 font-bold bg-neutral-200 text-black/80 dark:bg-zinc-800 dark:text-white/80 rounded-md mr-auto">
                 {{-- Tampilkan kuota dan sisa kuota --}}
-                (Kuota: {{ $pengajuan->bidang->kuota }}, Sisa Kuota: {{ $pengajuan->bidang->sisa_kuota }})
+                Kuota: {{ $pengajuan->bidang->kuota }}, Sisa Kuota: {{ $pengajuan->bidang->sisa_kuota }}
             </span>
         </span>
         @endscope

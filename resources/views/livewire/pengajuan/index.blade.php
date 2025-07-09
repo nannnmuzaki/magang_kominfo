@@ -129,12 +129,12 @@ new
     <x-mary-table class="font-medium" :headers="$headers" :rows="$semuaPengajuan" :sort-by="$sortBy" with-pagination>
 
         @scope('cell_bidang.nama', $pengajuan)
-        <span class="font-medium">
+        <span class="font-medium flex flex-col gap-1">
             {{ $pengajuan->bidang->nama ?? 'N/A' }}
-            <br>
-            <span class="text-xs">
+            <span
+                class="text-xs p-1 px-2 font-bold bg-neutral-200 text-black/70 dark:bg-zinc-800 dark:text-white/80 rounded-md mr-auto">
                 {{-- Tampilkan kuota dan sisa kuota --}}
-                (Kuota: {{ $pengajuan->bidang->kuota }}, Sisa Kuota: {{ $pengajuan->bidang->sisa_kuota }})
+                Kuota: {{ $pengajuan->bidang->kuota }}, Sisa Kuota: {{ $pengajuan->bidang->sisa_kuota }}
             </span>
         </span>
         @endscope
@@ -164,7 +164,7 @@ new
             @can('update', $pengajuan)
                 <x-mary-button label="Edit" icon-right="o-pencil-square"
                     link="{{ route('pengajuan.edit', ['pengajuan' => $pengajuan->id]) }}"
-                    class="btn-sm btn-primary rounded-md dark:btn-neutral" />
+                    class="btn-sm rounded-md dark:btn-neutral" />
             @endcan
 
             @can('view', $pengajuan)
