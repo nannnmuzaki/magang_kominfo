@@ -81,11 +81,26 @@ new
     {
         $validated = $this->validate();
 
+        if (
+            Bidang::where('nama', $validated['nama'])
+                ->where('id', '!=', $this->selectedBidang->id)
+                ->exists()
+        ) {
+            $this->error('Bidang dengan nama ini sudah ada.');
+            return;
+        }
+
+        if ($validated['kuota'] < $this->selectedBidang->pengajuan()->whereIn('status', ['diterima', 'berlangsung'])->count()) {
+            $this->error('Kuota tidak boleh kurang dari jumlah pengajuan yang Diterima atau Berlangsung saat ini.');
+            return;
+        }
+
         if ($this->selectedBidang) {
             $this->selectedBidang->update([
                 'nama' => $validated['nama'],
                 'kuota' => $validated['kuota'],
             ]);
+
 
             // Logika untuk mengupdate bidang
             $this->selectedBidang->save();
@@ -127,16 +142,11 @@ new
                 $query->where('nama', 'ilike', '%' . $this->search . '%');
             })
             ->select('id', 'nama', 'kuota', 'created_at') // Pilih kolom asli
-            ->selectRaw(
-                // Hitung kuota terpakai dan kurangi dari kuota total
-                'kuota - (
-                SELECT count(*) 
-                FROM pengajuan 
-                WHERE pengajuan.bidang_id = bidang.id 
-                AND pengajuan.status IN (?, ?)
-            ) as sisa_kuota',
-                ['diterima', 'berlangsung'] // Bindings untuk keamanan
-            )
+            ->withCount([
+                'pengajuan as pengajuan_diterima_berlangsung_count' => function ($query) {
+                    $query->whereIn('status', ['diterima', 'berlangsung']);
+                }
+            ])
             ->orderBy($this->sortBy['column'], $this->sortBy['direction']);
 
         return [
