@@ -2,6 +2,11 @@
 
 use Illuminate\Support\Facades\Route;
 use Livewire\Volt\Volt;
+use App\Http\Controllers\SertifikatController;
+
+Route::get('/sertifikat/download/{pengajuan}', [SertifikatController::class, 'download'])
+    ->name('sertifikat.download')
+    ->middleware(['auth', 'verified', 'signed']);
 
 Route::get('/', function () {
     return view('welcome');
@@ -11,7 +16,7 @@ Route::view('dashboard', 'dashboard')
 ->middleware(['auth', 'verified'])
 ->name('dashboard');
 
-Route::middleware(['auth'])->group(function () {
+Route::middleware(['auth', 'verified'])->group(function () {
     Route::redirect('settings', 'settings/profile');
 
     Volt::route('dashboard', 'dashboard')->name('dashboard');
@@ -26,7 +31,7 @@ Route::middleware(['auth'])->group(function () {
     Volt::route('settings/appearance', 'settings.appearance')->name('settings.appearance');
 });
 
-Route::middleware(['auth', 'admin'])->group(function () {
+Route::middleware(['auth', 'verified', 'admin'])->group(function () {
     Volt::route('admin/dashboard', 'admin.dashboard')->name('admin.dashboard');
 
     Volt::route('admin/pengajuan', 'admin.pengajuan.index')->name('admin.pengajuan.index');

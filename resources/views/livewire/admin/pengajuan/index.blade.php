@@ -8,6 +8,7 @@ use App\Models\Bidang;
 use Illuminate\Support\Str;
 use Mary\Traits\Toast;
 use PhpOffice\PhpWord\TemplateProcessor;
+use Illuminate\Support\Facades\URL;
 use Carbon\Carbon;
 
 new
@@ -45,6 +46,81 @@ new
     public bool $generateSelesaiModal = false;
     #[Rule('required|string|max:255')]
     public string $nomorSuratSelesai = '';
+
+    public function pengajuanDetail($pengajuanId)
+    {
+        try {
+            $this->selectedPengajuan = Pengajuan::with([
+                'bidang' => function ($query) {
+                    $query->select('id', 'nama');
+                }])->findOrFail($pengajuanId);
+            $this->selectedPengajuanStatus = $this->selectedPengajuan->status;
+        } catch (\Exception $e) {
+            $this->error('Pengajuan tidak ditemukan atau terjadi kesalahan saat mengambil data.');
+            return [];
+        }
+        $this->detailDrawer = true;
+    }
+
+    public function updateStatus()
+    {
+        if (!$this->selectedPengajuan) {
+            $this->error('Tidak ada pengajuan yang dipilih.');
+            return;
+        }
+
+        // Validasi status yang diberikan
+        if (!in_array($this->selectedPengajuanStatus, ['review', 'ditolak', 'diterima', 'berlangsung', 'selesai'])) {
+            $this->error('Status yang dipilih tidak valid.');
+            return;
+        } else {
+            // validasi kuota bidang jika status diubah menjadi diterima atau berlangsung
+            if (in_array($this->selectedPengajuanStatus, ['diterima', 'berlangsung'])) {
+                $sisaKuota = $this->selectedPengajuan->bidang->kuota - Pengajuan::where('bidang_id', $this->selectedPengajuan->bidang->id)
+                                    ->whereIn('status', ['diterima', 'berlangsung'])
+                                    ->count();
+
+                if ($sisaKuota <= 0) {
+                    $this->error('Kuota bidang ini sudah penuh. Tidak dapat mengubah status pengajuan ke Diterima atau Berlangsung.');
+                    $this->selectedPengajuanStatus = $this->selectedPengajuan->status; // Reset ke status awal
+                    return;
+                }
+            }
+
+            $this->selectedPengajuan->status = $this->selectedPengajuanStatus;
+            $this->selectedPengajuan->save();
+            $this->success('Status pengajuan berhasil diperbarui.');
+        }
+    }
+
+    public function startDelete(string $id, string $name): void
+    {
+        $this->pengajuanToDeleteId = $id;
+        $this->pengajuanToDeleteName = $name;
+        $this->deleteModal = true;
+    }
+
+    /**
+     * Menjalankan proses penghapusan setelah dikonfirmasi.
+     */
+    public function confirmDelete(): void
+    {
+        $pengajuan = Pengajuan::find($this->pengajuanToDeleteId);
+
+        if (!$pengajuan) {
+            $this->error('Pengajuan tidak ditemukan.');
+            return;
+        }
+
+        // Metode delete akan otomatis memicu event 'deleting' di model
+        // untuk menghapus file terkait.
+        $pengajuan->delete();
+
+        $this->detailDrawer = false; // Tutup drawer detail
+
+        $this->success("Pengajuan dari {$this->pengajuanToDeleteName} telah dihapus.");
+        $this->deleteModal = false; // Tutup modal
+    }
 
     /**
      * buka modal untuk mengenerate surat balasan.
@@ -161,80 +237,26 @@ new
         }
     }
 
-    public function pengajuanDetail($pengajuanId)
-    {
-        try {
-            $this->selectedPengajuan = Pengajuan::with([
-                'bidang' => function ($query) {
-                    $query->select('id', 'nama');
-                }])->findOrFail($pengajuanId);
-            $this->selectedPengajuanStatus = $this->selectedPengajuan->status;
-        } catch (\Exception $e) {
-            $this->error('Pengajuan tidak ditemukan atau terjadi kesalahan saat mengambil data.');
-            return [];
-        }
-        $this->detailDrawer = true;
-    }
-
-    public function updateStatus()
-    {
-        if (!$this->selectedPengajuan) {
-            $this->error('Tidak ada pengajuan yang dipilih.');
-            return;
-        }
-
-        // Validasi status yang diberikan
-        if (!in_array($this->selectedPengajuanStatus, ['review', 'ditolak', 'diterima', 'berlangsung', 'selesai'])) {
-            $this->error('Status yang dipilih tidak valid.');
-            return;
-        } else {
-            // validasi kuota bidang jika status diubah menjadi diterima atau berlangsung
-            if (in_array($this->selectedPengajuanStatus, ['diterima', 'berlangsung'])) {
-                $sisaKuota = $this->selectedPengajuan->bidang->kuota - Pengajuan::where('bidang_id', $this->selectedPengajuan->bidang->id)
-                                    ->whereIn('status', ['diterima', 'berlangsung'])
-                                    ->count();
-
-                if ($sisaKuota <= 0) {
-                    $this->error('Kuota bidang ini sudah penuh. Tidak dapat mengubah status pengajuan ke Diterima atau Berlangsung.');
-                    $this->selectedPengajuanStatus = $this->selectedPengajuan->status; // Reset ke status awal
-                    return;
-                }
-            }
-
-            $this->selectedPengajuan->status = $this->selectedPengajuanStatus;
-            $this->selectedPengajuan->save();
-            $this->success('Status pengajuan berhasil diperbarui.');
-        }
-    }
-
-    public function startDelete(string $id, string $name): void
-    {
-        $this->pengajuanToDeleteId = $id;
-        $this->pengajuanToDeleteName = $name;
-        $this->deleteModal = true;
-    }
-
-    /**
-     * Menjalankan proses penghapusan setelah dikonfirmasi.
+        /**
+     * Menghasilkan sertifikat dalam format PDF.
      */
-    public function confirmDelete(): void
-    {
-        $pengajuan = Pengajuan::find($this->pengajuanToDeleteId);
-
-        if (!$pengajuan) {
-            $this->error('Pengajuan tidak ditemukan.');
-            return;
-        }
-
-        // Metode delete akan otomatis memicu event 'deleting' di model
-        // untuk menghapus file terkait.
-        $pengajuan->delete();
-
-        $this->detailDrawer = false; // Tutup drawer detail
-
-        $this->success("Pengajuan dari {$this->pengajuanToDeleteName} telah dihapus.");
-        $this->deleteModal = false; // Tutup modal
+    public function generateCertificate()
+{
+    if (!$this->selectedPengajuan) {
+        $this->addError('selectedPengajuan', 'Silakan pilih pengajuan terlebih dahulu.');
+        return;
     }
+
+    if ($this->selectedPengajuan->status !== 'selesai') {
+        $this->dispatch('notify', type: 'warning', message: 'Sertifikat hanya bisa dibuat untuk pengajuan yang sudah selesai.');
+        return;
+    }
+
+    $url = URL::signedRoute('sertifikat.download', ['pengajuan' => $this->selectedPengajuan->id]);
+
+    // Emit browser event
+    $this->dispatch('open-pdf', url: $url);
+}
 
     public function with(): array
     {
@@ -538,6 +560,9 @@ new
                             <x-mary-button label="Generate Surat Selesai" icon="o-document-arrow-down"
                                 wire:click="startGenerateDocxSelesai" spinner
                                 class="btn-primary rounded-md dark:btn-neutral w-full mb-3" />
+                            <x-mary-button label="Download Sertifikat" icon="o-academic-cap"
+                                wire:click="generateCertificate" spinner
+                                class="btn-primary rounded-md dark:btn-neutral w-full mb-3" />
                         @endif
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-2">
                             <x-mary-button label="Edit Pengajuan" icon="o-pencil-square"
@@ -619,4 +644,15 @@ new
             </x-mary-form>
         </x-mary-modal>
     @endif
+    <a id="pdfLink" href="#" target="_blank" style="display: none;"></a>
 </div>
+
+@script
+<script>
+    window.addEventListener('open-pdf', event => {
+        const link = document.getElementById('pdfLink');
+        link.href = event.detail.url;
+        link.click(); // triggers in new tab
+    });
+</script>
+@endscript
