@@ -28,6 +28,7 @@ new
     // Properti untuk detail pengajuan
     public ?Pengajuan $selectedPengajuan = null;
     public string $selectedPengajuanStatus = '';
+    public ?int $sisaKuota = null;
     public bool $detailDrawer = false;
 
     // Properti untuk modal delete
@@ -162,14 +163,17 @@ new
 
     public function pengajuanDetail($pengajuanId)
     {
-        $this->detailDrawer = true;
         try {
-            $this->selectedPengajuan = Pengajuan::with('bidang')->findOrFail($pengajuanId);
+            $this->selectedPengajuan = Pengajuan::with([
+                'bidang' => function ($query) {
+                    $query->select('id', 'nama');
+                }])->findOrFail($pengajuanId);
             $this->selectedPengajuanStatus = $this->selectedPengajuan->status;
         } catch (\Exception $e) {
             $this->error('Pengajuan tidak ditemukan atau terjadi kesalahan saat mengambil data.');
             return [];
         }
+        $this->detailDrawer = true;
     }
 
     public function updateStatus()
@@ -186,9 +190,13 @@ new
         } else {
             // validasi kuota bidang jika status diubah menjadi diterima atau berlangsung
             if (in_array($this->selectedPengajuanStatus, ['diterima', 'berlangsung'])) {
-                $sisaKuota = $this->selectedPengajuan->bidang->kuota - $this->selectedPengajuan->bidang->pengajuan()->whereIn('status', ['diterima', 'berlangsung'])->count();
+                $sisaKuota = $this->selectedPengajuan->bidang->kuota - Pengajuan::where('bidang_id', $this->selectedPengajuan->bidang->id)
+                                    ->whereIn('status', ['diterima', 'berlangsung'])
+                                    ->count();
+
                 if ($sisaKuota <= 0) {
                     $this->error('Kuota bidang ini sudah penuh. Tidak dapat mengubah status pengajuan ke Diterima atau Berlangsung.');
+                    $this->selectedPengajuanStatus = $this->selectedPengajuan->status; // Reset ke status awal
                     return;
                 }
             }
@@ -236,7 +244,7 @@ new
             });
 
         $bidang = Bidang::query()
-            ->select('id', 'nama', 'kuota')
+            ->select('id', 'nama')
             ->get();
 
         $availableTahun = Pengajuan::query()
@@ -248,8 +256,10 @@ new
         $pengajuanQuery = Pengajuan::query()
             ->with([
                 'bidang' => function ($query) {
-                    // Hanya ambil id dan nama dari tabel bidang
-                    $query->select('id', 'nama');
+                    $query->select('id', 'nama', 'kuota')
+                    ->withCount(['pengajuan as pengajuan_diterima_berlangsung_count' => function ($q) {
+                        $q->whereIn('status', ['diterima', 'berlangsung']);
+                    }]);
                 }
             ])
             ->select('id', 'nama', 'nim_nis', 'bidang_id', 'status', 'created_at')
@@ -352,7 +362,14 @@ new
 
         @scope('cell_bidang.nama', $pengajuan)
         {{-- Akses nama bidang langsung dari relasi yang sudah di-load --}}
-        <span class="font-medium">{{ $pengajuan->bidang->nama ?? 'N/A' }}</span>
+        <span class="font-medium">
+            {{ $pengajuan->bidang->nama ?? 'N/A' }}
+            <br>
+            <span class="text-xs">
+                {{-- Tampilkan kuota dan sisa kuota --}}
+                (Kuota: {{ $pengajuan->bidang->kuota }}, Sisa Kuota: {{ $pengajuan->bidang->sisa_kuota }})
+            </span>
+        </span>
         @endscope
 
         @scope('cell_status', $pengajuan)
@@ -502,7 +519,7 @@ new
                     <div>
                         <h3 class="font-bold text-lg mb-3">Update Status</h3>
                         <div class="flex flex-col gap-4 text-sm">
-                            <x-mary-select label="Pilih Status" wire:model="selectedPengajuanStatus"
+                            <x-mary-select label="Pilih Status" hint="Ketika sisa kuota HABIS, maka status pengajuan tidak bisa diubah ke 'Diterima' atau 'Berlangsung'" wire:model="selectedPengajuanStatus"
                                 :options="$statusOptions" placeholder="Pilih Status Magang"
                                 class="bg-transparent dark:bg-zinc-950 rounded-md" />
                             <x-mary-button label="Update Status" icon="o-document-arrow-up" wire:click="updateStatus"

@@ -96,14 +96,15 @@ new
 
         // Validasi kuota bidang jika status diubah menjadi diterima atau berlangsung
         if (in_array($validated['status'], ['diterima', 'berlangsung'])) {
-            $sisaKuota = $this->pengajuan->bidang->kuota -
-                $this->pengajuan->bidang->pengajuan()
-                    ->whereIn('status', ['diterima', 'berlangsung'])
-                    ->count();
+            $sisaKuota = $this->pengajuan->bidang->kuota - Pengajuan::where('bidang_id', $this->pengajuan->bidang_id)
+                ->whereIn('status', ['diterima', 'berlangsung'])
+                ->count();
             if ($sisaKuota <= 0) {
                 $this->error(
-                    'Kuota bidang ini sudah penuh. Tidak dapat mengubah status pengajuan ke Diterima atau Berlangsung.'
+                    'Kuota bidang ini sudah HABIS. Tidak dapat mengubah status pengajuan ke Diterima atau Berlangsung.'
                 );
+                // Kembalikan status ke nilai awal sebelum validasi
+                $this->status = $this->pengajuan->status;
                 return;
             }
         }
@@ -157,9 +158,21 @@ new
      */
     public function with(): array
     {
-        $BidangOptions = Bidang::select('id', 'nama', 'kuota')->orderBy('nama', 'asc')->get()->map(function ($bidang) {
-            return ['id' => $bidang->id, 'name' => "{$bidang->nama} (Kuota: {$bidang->kuota})"];
-        })->all();
+        $bidangOptions = Bidang::query()
+            ->withCount([
+                'pengajuan as pengajuan_diterima_berlangsung_count' => function ($query) {
+                    $query->whereIn('status', ['diterima', 'berlangsung']);
+                }
+            ])
+            ->orderBy('nama', 'asc')
+            ->get()
+            ->map(function ($bidang) {
+                return [
+                    'id' => $bidang->id,
+                    'name' => "{$bidang->nama} (Kuota: {$bidang->kuota}, Sisa: {$bidang->sisa_kuota})"
+                ];
+            })
+            ->all();
 
         $statusOptions = collect(['review', 'ditolak', 'diterima', 'berlangsung', 'selesai'])
             ->map(function ($status) {
@@ -167,7 +180,7 @@ new
             });
 
         return [
-            'bidangOptions' => $BidangOptions,
+            'bidangOptions' => $bidangOptions,
             'statusOptions' => $statusOptions,
         ];
     }
@@ -237,8 +250,10 @@ new
                 </div>
 
                 <div class="md:col-span-2">
-                    <x-mary-select label="Status" :options="$statusOptions" wire:model="status"
-                        placeholder="Pilih Status Magang" class="bg-transparent dark:bg-zinc-900 rounded-md" />
+                    <x-mary-select label="Status" placeholder="Pilih Status Magang"
+                        hint="Ketika sisa kuota bidang HABIS, maka status pengajuan tidak bisa diubah ke 'Diterima' atau 'Berlangsung'"
+                        :options="$statusCollection" wire:model="status" :options="$statusOptions" wire:model="status"
+                        class="bg-transparent dark:bg-zinc-900 rounded-md" />
                 </div>
             </div>
         </div>
