@@ -4,7 +4,6 @@ use Livewire\Volt\Component;
 use Livewire\Attributes\{Layout, Title, Rule};
 use Illuminate\Validation\Rule as ValidationRule;
 use App\Models\Bidang;
-use Illuminate\Support\Facades\Auth;
 use Mary\Traits\Toast;
 
 new
@@ -123,14 +122,25 @@ new
 
     public function with()
     {
+        $bidangQuery = Bidang::query()
+            ->when($this->search, function ($query) {
+                $query->where('nama', 'ilike', '%' . $this->search . '%');
+            })
+            ->select('id', 'nama', 'kuota', 'created_at') // Pilih kolom asli
+            ->selectRaw(
+                // Hitung kuota terpakai dan kurangi dari kuota total
+                'kuota - (
+                SELECT count(*) 
+                FROM pengajuan 
+                WHERE pengajuan.bidang_id = bidang.id 
+                AND pengajuan.status IN (?, ?)
+            ) as sisa_kuota',
+                ['diterima', 'berlangsung'] // Bindings untuk keamanan
+            )
+            ->orderBy($this->sortBy['column'], $this->sortBy['direction']);
+
         return [
-            'semuaBidang' => Bidang::query()
-                ->when($this->search, function ($query) {
-                    $query->where('nama', 'ilike', '%' . $this->search . '%');
-                })
-                ->select('id', 'nama', 'kuota', 'created_at')
-                ->orderBy($this->sortBy['column'], $this->sortBy['direction'])
-                ->paginate($this->perPage),
+            'semuaBidang' => $bidangQuery->paginate($this->perPage),
         ];
     }
 }; ?>
@@ -152,6 +162,7 @@ new
         $headers = [
             ['key' => 'nama', 'label' => 'Nama'],
             ['key' => 'kuota', 'label' => 'Kuota'],
+            ['key' => 'sisa_kuota', 'label' => 'Sisa Kuota'],
             ['key' => 'created_at', 'label' => 'Tanggal Dibuat', 'sortable' => true],
             ['key' => 'aksi', 'label' => 'Aksi', 'sortable' => false],
         ];
