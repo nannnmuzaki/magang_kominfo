@@ -43,9 +43,17 @@ new
 
     public function with(): array
     {
-
         $pengajuanQuery = Auth::user()->pengajuan()
-            ->with('bidang')
+            ->with([
+                'bidang' => function ($query) {
+                    $query->select('id', 'nama', 'kuota')
+                        ->withCount([
+                            'pengajuan as pengajuan_diterima_berlangsung_count' => function ($q) {
+                                $q->whereIn('status', ['diterima', 'berlangsung']);
+                            }
+                        ]);
+                }
+            ])
             ->when($this->search, function ($query) {
                 // Terapkan filter pencarian jika $this->search tidak kosong
                 $query->where('nama', 'ilike', '%' . $this->search . '%');
@@ -88,8 +96,14 @@ new
     <x-mary-table class="font-medium" :headers="$headers" :rows="$semuaPengajuan" :sort-by="$sortBy" with-pagination>
 
         @scope('cell_bidang.nama', $pengajuan)
-        {{-- Akses nama bidang langsung dari relasi yang sudah di-load --}}
-        <span class="font-medium">{{ $pengajuan->bidang->nama ?? 'N/A' }}</span>
+        <span class="font-medium">
+            {{ $pengajuan->bidang->nama ?? 'N/A' }}
+            <br>
+            <span class="text-xs">
+                {{-- Tampilkan kuota dan sisa kuota --}}
+                (Kuota: {{ $pengajuan->bidang->kuota }}, Sisa Kuota: {{ $pengajuan->bidang->sisa_kuota }})
+            </span>
+        </span>
         @endscope
 
         @scope('cell_status', $pengajuan)
