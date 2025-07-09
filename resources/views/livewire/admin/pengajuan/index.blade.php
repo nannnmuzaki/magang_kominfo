@@ -19,7 +19,7 @@ new
 
     // Properti untuk filter dan pencarian
     public string $search = '';
-    public int $perPage = 20;
+    public int $perPage = 10;
     public array $sortBy = ['column' => 'created_at', 'direction' => 'desc'];
     public string $selectedStatus = 'all';
     public string $selectedBidangId = 'all';
@@ -136,6 +136,7 @@ new
 
             // 2. Ganti placeholder dengan data
             $templateProcessor->setValue('nomor_surat_selesai', $this->nomorSuratSelesai);
+            $templateProcessor->setValue('tahun_surat_selesai', now()->year);
             $templateProcessor->setValue('nama', $this->selectedPengajuan->nama);
             $templateProcessor->setValue('nim_nis', $this->selectedPengajuan->nim_nis);
             $templateProcessor->setValue('jurusan_prodi', $this->selectedPengajuan->jurusan_prodi);
@@ -183,6 +184,15 @@ new
             $this->error('Status yang dipilih tidak valid.');
             return;
         } else {
+            // validasi kuota bidang jika status diubah menjadi diterima atau berlangsung
+            if (in_array($this->selectedPengajuanStatus, ['diterima', 'berlangsung'])) {
+                $sisaKuota = $this->selectedPengajuan->bidang->kuota - $this->selectedPengajuan->bidang->pengajuan()->whereIn('status', ['diterima', 'berlangsung'])->count();
+                if ($sisaKuota <= 0) {
+                    $this->error('Kuota bidang ini sudah penuh. Tidak dapat mengubah status pengajuan ke diterima atau berlangsung.');
+                    return;
+                }
+            }
+
             $this->selectedPengajuan->status = $this->selectedPengajuanStatus;
             $this->selectedPengajuan->save();
             $this->success('Status pengajuan berhasil diperbarui.');
@@ -338,7 +348,7 @@ new
 
     {{-- Render tabel dengan data dan header yang sudah disiapkan --}}
     <x-mary-table class="font-medium" :headers="$headers" :rows="$semuaPengajuan" :sort-by="$sortBy" with-pagination
-        per-page="perPage" :per-page-values="[20, 30, 50]">
+        per-page="perPage" :per-page-values="[10, 20, 30]">
 
         @scope('cell_bidang.nama', $pengajuan)
         {{-- Akses nama bidang langsung dari relasi yang sudah di-load --}}
@@ -576,7 +586,7 @@ new
 
     @if ($this->generateSelesaiModal)
         {{-- MODAL GENERATE SURAT BALASAN --}}
-        <x-mary-modal wire:model="generateSelesaiModal" title="Generate Surat Balasan"
+        <x-mary-modal wire:model="generateSelesaiModal" title="Generate Surat Selesai"
             box-class="dark:bg-zinc-800 rounded-md">
             <hr class="border-t-zinc-300 dark:border-t-zinc-700 mb-4 -mt-2" />
 
