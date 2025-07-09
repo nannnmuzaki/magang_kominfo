@@ -116,9 +116,21 @@ new
 
     public function with(): array
     {
-        $BidangOptions = Bidang::select('id', 'nama', 'kuota')->orderBy('nama', 'asc')->get()->map(function ($bidang) {
-            return ['id' => $bidang->id, 'name' => "{$bidang->nama} (Kuota: {$bidang->kuota})"];
-        })->all();
+        $bidangOptions = Bidang::query()
+            ->withCount([
+                'pengajuan as pengajuan_diterima_berlangsung_count' => function ($query) {
+                    $query->whereIn('status', ['diterima', 'berlangsung']);
+                }
+            ])
+            ->orderBy('nama', 'asc')
+            ->get()
+            ->map(function ($bidang) {
+                return [
+                    'id' => $bidang->id,
+                    'name' => "{$bidang->nama} (Kuota: {$bidang->kuota}, Sisa: {$bidang->sisa_kuota})"
+                ];
+            })
+            ->all();
 
         $statusOptions = ['review', 'ditolak', 'diterima', 'berlangsung', 'selesai'];
         $statusCollection = collect($statusOptions)->map(function ($status) {
@@ -128,7 +140,7 @@ new
             ];
         });
         return [
-            'bidangOptions' => $BidangOptions,
+            'bidangOptions' => $bidangOptions,
             'statusCollection' => $statusCollection,
         ];
     }
