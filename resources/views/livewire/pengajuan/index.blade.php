@@ -67,9 +67,42 @@ new
 
 }; ?>
 
-<div class="flex h-full w-full flex-col gap-4 rounded-xl">
+<div class="flex h-full w-full flex-col gap-4">
     <x-mary-header class="mb-1!" title="Pengajuan" subtitle="Kelola pengajuan magang anda di Kominfo Banyumas"
         separator />
+
+    @if (Auth::user()->pengajuan()->where('status', 'diterima')->exists())
+        <div x-data="{ visible: true }" x-show="visible" x-collapse>
+            <div x-show="visible" x-transition>
+                <flux:callout icon="bell-alert" color="emerald">
+                    <flux:callout.heading>Pengajuan Anda Telah Diterima!</flux:callout.heading>
+                    <flux:callout.text>
+                        Silakan kunjungi kantor Sekretariat Dinas Kominfo Banyumas
+                        untuk mendapatkan surat balasan pengajuan PKL Anda.
+                    </flux:callout.text>
+                    <x-slot name="controls">
+                        <flux:button icon="x-mark" variant="ghost" x-on:click="visible = false" />
+                    </x-slot>
+                </flux:callout>
+            </div>
+        </div>
+    @endif
+    @if (Auth::user()->pengajuan()->where('status', 'selesai')->exists())
+        <div x-data="{ visible: true }" x-show="visible" x-collapse>
+            <div x-show="visible" x-transition>
+                <flux:callout icon="check-badge" color="blue">
+                    <flux:callout.heading>PKL Anda Telah Selesai!</flux:callout.heading>
+                    <flux:callout.text>
+                        Silahkan unduh surat tanda selesai PKL dan Sertifikat PKL Anda di detail pengajuan (Tekan tombol
+                        <b>'Lihat'</b>).
+                    </flux:callout.text>
+                    <x-slot name="controls">
+                        <flux:button icon="x-mark" variant="ghost" x-on:click="visible = false" />
+                    </x-slot>
+                </flux:callout>
+            </div>
+        </div>
+    @endif
 
     <flux:button icon:trailing="plus" href="{{ route('pengajuan.create') }}" class="mr-auto" wire:navigate>
         Buat Pengajuan
