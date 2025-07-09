@@ -46,7 +46,7 @@
                         {{ __('Dashboard') }}
                     </flux:navlist.item>
                     <flux:navlist.item class="data-current:bg-accent!" icon="document-text" :href="route('pengajuan.index')"
-                        :current="request()->routeIs('admin.pengajuan.index')" wire:navigate>
+                        :current="request()->routeIs('pengajuan.index')" wire:navigate>
                         {{ __('Pengajuan') }}
                     </flux:navlist.item>
                 @endcan
