@@ -94,6 +94,20 @@ new
     {
         $validated = $this->validate();
 
+        // Validasi kuota bidang jika status diubah menjadi diterima atau berlangsung
+        if (in_array($validated['status'], ['diterima', 'berlangsung'])) {
+            $sisaKuota = $this->pengajuan->bidang->kuota -
+                $this->pengajuan->bidang->pengajuan()
+                    ->whereIn('status', ['diterima', 'berlangsung'])
+                    ->count();
+            if ($sisaKuota <= 0) {
+                $this->error(
+                    'Kuota bidang ini sudah penuh. Tidak dapat mengubah status pengajuan ke Diterima atau Berlangsung.'
+                );
+                return;
+            }
+        }
+
         // 1. Update data teks terlebih dahulu, dengan mengecualikan field file.
         $this->pengajuan->update(
             Arr::except($validated, ['surat_pengantar_path', 'cv_path'])

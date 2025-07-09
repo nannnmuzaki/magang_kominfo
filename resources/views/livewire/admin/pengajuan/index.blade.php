@@ -188,7 +188,7 @@ new
             if (in_array($this->selectedPengajuanStatus, ['diterima', 'berlangsung'])) {
                 $sisaKuota = $this->selectedPengajuan->bidang->kuota - $this->selectedPengajuan->bidang->pengajuan()->whereIn('status', ['diterima', 'berlangsung'])->count();
                 if ($sisaKuota <= 0) {
-                    $this->error('Kuota bidang ini sudah penuh. Tidak dapat mengubah status pengajuan ke diterima atau berlangsung.');
+                    $this->error('Kuota bidang ini sudah penuh. Tidak dapat mengubah status pengajuan ke Diterima atau Berlangsung.');
                     return;
                 }
             }
